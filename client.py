@@ -26,11 +26,12 @@ start_time = time.time()
 timestamp = start_time # Gives current timestamp in seconds
 time_flag = 1 # Initialization of time flag
 
-no_of_auth = 3
+no_of_auth = 3 # No of times to authenticate
+period = 3 # Period for each authentication in seconds
 
 while True:
     if (time_flag <= no_of_auth):
-        if (time_flag == 1) or (time.time() - timestamp >= 3):
+        if (time_flag == 1) or (time.time() - timestamp >= period):
 
             timestamp = time.time()
 
@@ -56,5 +57,3 @@ while True:
     else:
         c.send(bytes('Close Connection', 'utf-8'))
         break
-
-
