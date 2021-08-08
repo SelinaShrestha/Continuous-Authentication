@@ -32,16 +32,17 @@ time_flag = 1 # Initialization of time flag
 
 period = 3 # Period for each authentication in seconds
 total_period = 15 # Total period for the session
-no_of_auth = int(total_period / period) # No of times to authenticate
+#no_of_auth = int(total_period / period) # No of times to authenticate
 
 # Generate k degree polynomial for the secret
 a = client_functions.polynomial_generator(secret, k)
 auth_result = "pass" # initialization
 while True:
-    if (time_flag <= no_of_auth):
+    #if (time_flag <= no_of_auth):
+    if (time.time() - start_time <= total_period):
         if (time_flag == 1) or (time.time() - timestamp >= period):
 
-            timestamp = time.time()
+            #timestamp = time.time()
 
             print("Polynomial coefficients a = ", a)
             print("Share u = f(x) = (a0 + time flag) + a1*x + a2*x^2 + ... + ak-1*x^k-1 where x = 1,2,...")
