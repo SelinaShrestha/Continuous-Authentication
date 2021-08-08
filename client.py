@@ -42,7 +42,7 @@ while True:
     if (time.time() - start_time <= total_period):
         if (time_flag == 1) or (time.time() - timestamp >= period):
 
-            #timestamp = time.time()
+            timestamp = time.time()
 
             print("Polynomial coefficients a = ", a)
             print("Share u = f(x) = (a0 + time flag) + a1*x + a2*x^2 + ... + ak-1*x^k-1 where x = 1,2,...")
