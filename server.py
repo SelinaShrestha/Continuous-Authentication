@@ -29,7 +29,7 @@ while True:
 
     # Session Initializations Parameters
     secret = 1234
-    period = 3 # Period for continuous authentication
+    period = 2 # Period for continuous authentication
     time_margin = 0.2*period  # Time margin for freshness = 20 % of period
 
     received_shares = [] # Store old shares received during the session to check freshness of new share
@@ -59,7 +59,7 @@ while True:
                 c.send(bytes(result, 'utf-8'))
             else:
                 num_of_fails = num_of_fails + 1
-                backoff_period = period**num_of_fails # exponential backoff period^
+                backoff_period = period**num_of_fails # exponential backoff = auth period ^ num of failures
                 result_dict = {
                     "auth_result": auth_result,
                     "backoff_period": backoff_period

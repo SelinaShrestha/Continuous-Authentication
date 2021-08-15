@@ -3,19 +3,55 @@ import hmac
 import random
 import numpy as np
 import json
+import ntplib
+import time
 
-def polynomial_generator(secret, k):
+def get_timestamp():
+    # Returns current ntp timestamp
+    try:
+        client = ntplib.NTPClient()
+        response = client.request('pool.ntp.org')
+        #print("Try 1")
+        return response.tx_time
+    except:
+        try:
+            client = ntplib.NTPClient()
+            response = client.request('0.asia.pool.ntp.org')
+            #print("Try 2")
+            return response.tx_time
+        except:
+            try:
+                client = ntplib.NTPClient()
+                response = client.request('1.asia.pool.ntp.org')
+                #print("Try 3")
+                return response.tx_time
+            except:
+                try:
+                    client = ntplib.NTPClient()
+                    response = client.request('2.asia.pool.ntp.org')
+                    #print("Try 4")
+                    return response.tx_time
+                except:
+                    try:
+                        client = ntplib.NTPClient()
+                        response = client.request('3.asia.pool.ntp.org')
+                        # print("Try 5")
+                        return response.tx_time
+                    except:
+                        print("Error fetching time")
+
+def polynomial_generator(k):
     #random.seed(50) # Random seed fixed for testing purpose
 
-    # Forming k-1 degree polynomial
+    # Forming k degree polynomial
     # f(x) = a0 + a1*x + a2*x^2 + ... + ak*x^k
-    a = np.zeros(k + 1, dtype=int)
-    a[0] = secret  # a0 = secret
-    a[1:] = random.sample(range(1, 100), k)  # Generate random k coefficients a1, a2, ..., ak
+    #a = np.zeros(k + 1, dtype=int)
+    #a[0] = secret  # a0 = secret
+    a = np.array(random.sample(range(1, 100), k)) # Generate random k coefficients a1, a2, ..., ak
 
     return a # Return polynomial coefficients
 
-def share_generator(secret, a, x, time_flag):
+def share_generator(secret, a, x, time_flag, sent_shares):
 
     # Constructing points from the polynomial as shares
     # share u = f(x) where x = 1,2,..

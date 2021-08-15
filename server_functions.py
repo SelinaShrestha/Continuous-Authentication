@@ -5,6 +5,43 @@ import numpy as np
 import time
 import json
 
+import ntplib
+
+def get_timestamp():
+    # Returns current ntp timestamp
+    try:
+        client = ntplib.NTPClient()
+        response = client.request('pool.ntp.org')
+        #print("Try 1")
+        return response.tx_time
+    except:
+        try:
+            client = ntplib.NTPClient()
+            response = client.request('0.asia.pool.ntp.org')
+            #print("Try 2")
+            return response.tx_time
+        except:
+            try:
+                client = ntplib.NTPClient()
+                response = client.request('1.asia.pool.ntp.org')
+                #print("Try 3")
+                return response.tx_time
+            except:
+                try:
+                    client = ntplib.NTPClient()
+                    response = client.request('2.asia.pool.ntp.org')
+                    #print("Try 4")
+                    return response.tx_time
+                except:
+                    try:
+                        client = ntplib.NTPClient()
+                        response = client.request('3.asia.pool.ntp.org')
+                        # print("Try 5")
+                        return response.tx_time
+                    except:
+                        print("Error fetching time")
+
+
 def authenticator(secret, received_shares, msg_received, time_margin):
     msg_received = json.loads(msg_received)
     # r = received
@@ -29,8 +66,10 @@ def authenticator(secret, received_shares, msg_received, time_margin):
     # calc = newly calculated
 
     # Check message freshness with timestamp
-    print("Timestamp difference = ", time.time() - r_timestamp)
-    if abs(time.time() - r_timestamp) <= time_margin:
+    timestamp = get_timestamp()
+    print("Timestamp difference = ", timestamp - r_timestamp)
+    print("time margin = ", time_margin)
+    if abs(timestamp - r_timestamp) <= time_margin:
         print("Message is fresh")
     else:
         print("Stale message")
