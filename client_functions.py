@@ -5,40 +5,7 @@ import numpy as np
 import json
 import ntplib
 import time
-
-def get_timestamp():
-    # Returns current ntp timestamp
-    try:
-        client = ntplib.NTPClient()
-        response = client.request('pool.ntp.org')
-        #print("Try 1")
-        return response.tx_time
-    except:
-        try:
-            client = ntplib.NTPClient()
-            response = client.request('0.asia.pool.ntp.org')
-            #print("Try 2")
-            return response.tx_time
-        except:
-            try:
-                client = ntplib.NTPClient()
-                response = client.request('1.asia.pool.ntp.org')
-                #print("Try 3")
-                return response.tx_time
-            except:
-                try:
-                    client = ntplib.NTPClient()
-                    response = client.request('2.asia.pool.ntp.org')
-                    #print("Try 4")
-                    return response.tx_time
-                except:
-                    try:
-                        client = ntplib.NTPClient()
-                        response = client.request('3.asia.pool.ntp.org')
-                        # print("Try 5")
-                        return response.tx_time
-                    except:
-                        print("Error fetching time")
+import crc_functions
 
 def polynomial_generator(k):
     #random.seed(50) # Random seed fixed for testing purpose
@@ -51,7 +18,7 @@ def polynomial_generator(k):
 
     return a # Return polynomial coefficients
 
-def share_generator(secret, a, x, time_flag, sent_shares):
+def share_generator(secret, a, x, time_flag):
 
     # Constructing points from the polynomial as shares
     # share u = f(x) where x = 1,2,..
@@ -69,23 +36,22 @@ def share_generator(secret, a, x, time_flag, sent_shares):
     return(u, sa) # return share, share authenticator
 
 
-def message_generator(secret, server_id, client_id, msg, u, timestamp, time_flag, sa):
-    # msg_to_mac = {server id,client id,message,share ui, timestamp, time_flag}
-    # msg_to_mac = str(client_id) + ',' + str(server_id) + ',' + msg + ',' + str(u) + ',' + str(timestamp) + ',' + str(time_flag)
+def message_generator(secret, server_id, client_id, msg, u, time_flag, sa):
+    # msg_to_mac = {server id,client id,message,share ui, time_flag}
+    # msg_to_mac = str(client_id) + ',' + str(server_id) + ',' + msg + ',' + str(u) + ',' + ',' + str(time_flag)
 
     msg_to_mac_dict = {
         "client_id": client_id,
         "server_id": server_id,
         "msg": msg,
         "u": int(u),
-        "timestamp": timestamp,
         "time_flag": time_flag
     }
 
     # convert dict to json
     msg_to_mac = json.dumps(msg_to_mac_dict)
     print("Message to MAC = ", msg_to_mac)
-    # mac = MAC with secret as key (server id,client id,message,share u, timestamp, time_flag)
+    # mac = MAC with secret as key (server id,client id,message,share u, time_flag)
     mac = hmac.new(bytes(str(secret),'utf-8'), msg_to_mac.encode('utf-8'), hashlib.sha256).digest()
     print("MAC =", mac)
 
@@ -97,5 +63,12 @@ def message_generator(secret, server_id, client_id, msg, u, timestamp, time_flag
     msg_to_send = json.dumps(msg_to_send_dict)
     print("Message to send = ", msg_to_send)
     return msg_to_send
+
+def crc_generator(msg_to_send, crc_key):
+    bin_data = ' '.join(format(ord(letter), 'b') for letter in msg_to_send)
+    print('Binary data = ', bin_data)
+    data_with_crc = crc_functions.encodeData(bin_data, crc_key)
+    print('Data with crc = ', data_with_crc)
+    return data_with_crc
 
 

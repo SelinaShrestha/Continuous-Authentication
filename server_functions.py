@@ -4,52 +4,34 @@ import random
 import numpy as np
 import time
 import json
-
+import crc_functions
 import ntplib
 
-def get_timestamp():
-    # Returns current ntp timestamp
-    try:
-        client = ntplib.NTPClient()
-        response = client.request('pool.ntp.org')
-        #print("Try 1")
-        return response.tx_time
-    except:
-        try:
-            client = ntplib.NTPClient()
-            response = client.request('0.asia.pool.ntp.org')
-            #print("Try 2")
-            return response.tx_time
-        except:
-            try:
-                client = ntplib.NTPClient()
-                response = client.request('1.asia.pool.ntp.org')
-                #print("Try 3")
-                return response.tx_time
-            except:
-                try:
-                    client = ntplib.NTPClient()
-                    response = client.request('2.asia.pool.ntp.org')
-                    #print("Try 4")
-                    return response.tx_time
-                except:
-                    try:
-                        client = ntplib.NTPClient()
-                        response = client.request('3.asia.pool.ntp.org')
-                        # print("Try 5")
-                        return response.tx_time
-                    except:
-                        print("Error fetching time")
+
+def authenticator(secret, crc_key, received_shares, msg_received, time_margin, start_timestamp):
+    # CRC check
+    rem = crc_functions.decodeData(msg_received, crc_key) # Remainder
+    if int(rem) == 0:
+        print("CRC check pass")
+    else:
+        print("CRC check fail")
+        return "fail"
+
+    r_bin_data = msg_received[:-(len(crc_key) - 1)]
+    print('Received binary data = ', r_bin_data)
+
+    msg_received_jsn = ''.join(chr(int(x, 2)) for x in r_bin_data.split())
+    print(msg_received_jsn)
+    msg_received = json.loads(msg_received_jsn)
+    print('Message received = ', msg_received)
 
 
-def authenticator(secret, received_shares, msg_received, time_margin):
-    msg_received = json.loads(msg_received)
+    #msg_received = json.loads(msg_received)
     # r = received
     r_client_id = msg_received["client_id"]
     r_server_id = msg_received["server_id"]
     r_message = msg_received["msg"]
     r_u = msg_received["u"]
-    r_timestamp = msg_received["timestamp"]
     r_time_flag = msg_received["time_flag"]
     r_sa = msg_received["sa"]
     r_mac = msg_received["mac"]
@@ -58,7 +40,6 @@ def authenticator(secret, received_shares, msg_received, time_margin):
     print("Server ID = ", r_server_id)
     print("Message = ", r_message)
     print("Share (u) = ", r_u)
-    print("Timestamp = ", r_timestamp)
     print("Time flag = ", r_time_flag)
     print("Share Authenticator (sa) = ", r_sa)
     print("MAC = ", r_mac)
@@ -66,10 +47,10 @@ def authenticator(secret, received_shares, msg_received, time_margin):
     # calc = newly calculated
 
     # Check message freshness with timestamp
-    timestamp = get_timestamp()
-    print("Timestamp difference = ", timestamp - r_timestamp)
+    timestamp = time.time()
+    print("Timestamp difference = ", start_timestamp - timestamp)
     print("time margin = ", time_margin)
-    if abs(timestamp - r_timestamp) <= time_margin:
+    if abs(start_timestamp - timestamp) <= time_margin:
         print("Message is fresh")
     else:
         print("Stale message")
@@ -89,13 +70,12 @@ def authenticator(secret, received_shares, msg_received, time_margin):
         "server_id": r_server_id,
         "msg": r_message,
         "u": r_u,
-        "timestamp": r_timestamp,
         "time_flag": r_time_flag
     }
     # convert dict to json
     msg_to_mac = json.dumps(msg_to_mac_dict)
     print("Message to MAC = ", msg_to_mac)
-    #calc_mac = hmac.new(bytes(str(secret),'utf-8'), bytes(r_client_id + ',' + r_server_id + ',' + r_message + ',' + r_u + ',' + r_timestamp + ',' + r_time_flag, 'utf-8'), hashlib.sha256).digest()
+    #calc_mac = hmac.new(bytes(str(secret),'utf-8'), bytes(r_client_id + ',' + r_server_id + ',' + r_message + ',' + r_u + ',' + ',' + r_time_flag, 'utf-8'), hashlib.sha256).digest()
     calc_mac = hmac.new(bytes(str(secret),'utf-8'), msg_to_mac.encode('utf-8'), hashlib.sha256).digest()
     print("Calculated MAC = ", calc_mac)
     if str(calc_mac) == r_mac:

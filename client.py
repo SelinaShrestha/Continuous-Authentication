@@ -28,13 +28,14 @@ secret = 1234
 k = 3 # degree of polynomial
 server_id = server_ip
 client_id = socket.gethostbyname(socket.gethostname())
+crc_key = '1001' # CRC key
 #x = 1
-start_time = client_functions.get_timestamp()
+start_time = time.time()
 timestamp = start_time # Gives current timestamp in seconds
 time_flag = 1 # Initialization of time flag
 
 period = 2 # Period for each authentication in seconds
-total_period = 21 # Total period for the session
+total_period = 20 # Total period for the session
 no_of_auth = 0
 sent_shares = [] # Store shares sent during the session to prevent duplicate shares
 
@@ -42,10 +43,10 @@ sent_shares = [] # Store shares sent during the session to prevent duplicate sha
 a = np.array([secret])
 a = np.append(a, client_functions.polynomial_generator(k))
 auth_result = "pass" # initialization
-while (client_functions.get_timestamp() - start_time <= total_period):
+while (time.time() - start_time <= total_period):
     #if (time_flag <= no_of_auth):
     #if (time.time() - start_time <= total_period):
-    if (time_flag == 1) or (client_functions.get_timestamp() - timestamp >= period):
+    if (time_flag == 1) or (time.time() - timestamp >= period):
         # If no of auth exceeds current polynomial degree, increase polynomial degree by k
         no_of_auth = no_of_auth + 1
         if no_of_auth > len(a) - 1:
@@ -57,32 +58,40 @@ while (client_functions.get_timestamp() - start_time <= total_period):
         # Generate share and share authenticator
         while True: # Select random x until unique share is generated
             x = random.randint(1, 20) # Generate random x
-            u, sa = client_functions.share_generator(secret, a, x, time_flag, sent_shares)
+            u, sa = client_functions.share_generator(secret, a, x, time_flag)
             if sent_shares.count(u) == 0: # Check that new share has not been sent previously
                 sent_shares.append(u)
                 break
 
         msg = "Continuous Authentication " + str(time_flag)
-        timestamp = client_functions.get_timestamp()
+        timestamp = time.time()
 
         # Generate message with authentication tokens
-        msg_to_send = client_functions.message_generator(secret, server_id, client_id, msg, u, timestamp, time_flag, sa)
+        msg_to_send = client_functions.message_generator(secret, server_id, client_id, msg, u, time_flag, sa)
+        msg_with_crc = client_functions.crc_generator(msg_to_send, crc_key) # Add CRC
 
-        c.send(bytes(msg_to_send, 'utf-8')) # Send message to server
+        print("Size of message sent = ", sys.getsizeof(bytes(msg_with_crc, 'utf-8')))
+        print("Message sent in bytes = ", msg_with_crc.encode('utf-8'))
 
-        time_flag = time_flag + 1
+        c.send(bytes('Request to send','utf-8')) # Request to send message to server
 
-        result = c.recv(1024).decode() # Current auth result, backoff period
-        print("Result = ", result)
-        print('*********************************************************************')
-        print(' ')
-        result = json.loads(result)
+        if(c.recv(1024).decode() == 'Clear to send'):
 
-        # Do not send data for backoff period if auth fails
-        if result["auth_result"] == "fail":
-            backoff_start = client_functions.get_timestamp()
-            while client_functions.get_timestamp() - backoff_start <= result["backoff_period"]:
-                pass
+            c.send(msg_with_crc.encode('utf-8')) # Send message to server
+
+            time_flag = time_flag + 1
+
+            result = c.recv(1024).decode() # Current auth result, backoff period
+            print("Result = ", result)
+            print('*********************************************************************')
+            print(' ')
+            result = json.loads(result)
+
+            # Do not send data for backoff period if auth fails
+            if result["auth_result"] == "fail":
+                backoff_start = time.time()
+                while time.time() - backoff_start <= result["backoff_period"]:
+                    pass
 
 c.send(bytes('Close Connection', 'utf-8'))
 print("Share storage cost: ", sys.getsizeof(sent_shares))

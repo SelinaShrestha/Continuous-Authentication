@@ -31,6 +31,7 @@ while True:
     secret = 1234
     period = 2 # Period for continuous authentication
     time_margin = 0.2*period  # Time margin for freshness = 20 % of period
+    crc_key = '1001' # CRC key
 
     received_shares = [] # Store old shares received during the session to check freshness of new share
 
@@ -39,11 +40,14 @@ while True:
     backoff_period = 0 # back off period initialized to 0
 
     while True:
-        msg_received = c.recv(1024).decode()
-        if msg_received != 'Close Connection':
+        request = c.recv(1024).decode()
+        if request == 'Request to send':
+            c.send(bytes('Clear to send', 'utf-8')) # notify client that its clear to send
+            start_timestamp = time.time()
+            msg_received = c.recv(1000000).decode()
             print("Message received = ", msg_received)
 
-            auth_result = server_functions.authenticator(secret, received_shares, msg_received, time_margin)
+            auth_result = server_functions.authenticator(secret, crc_key, received_shares, msg_received, time_margin, start_timestamp)
             print("Authentication ", auth_result)
 
             # Set backoff period according to auth result and consecutive num of failures
@@ -73,7 +77,7 @@ while True:
                     pass
             print('*********************************************************************')
             print(' ')
-        else:
-            print(msg_received)
+        elif request == 'Close Connection':
+            print(request)
             c.close() # close client socket
             break
