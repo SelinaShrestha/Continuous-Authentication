@@ -9,21 +9,7 @@ import ntplib
 
 
 def authenticator(secret, crc_key, received_shares, msg_received, time_margin, start_timestamp):
-    # CRC check
-    rem = crc_functions.decodeData(msg_received, crc_key) # Remainder
-    if int(rem) == 0:
-        print("CRC check pass")
-    else:
-        print("CRC check fail")
-        return "fail"
 
-    r_bin_data = msg_received[:-(len(crc_key) - 1)]
-    print('Received binary data = ', r_bin_data)
-
-    msg_received_jsn = ''.join(chr(int(x, 2)) for x in r_bin_data.split())
-    print(msg_received_jsn)
-    msg_received = json.loads(msg_received_jsn)
-    print('Message received = ', msg_received)
 
 
     #msg_received = json.loads(msg_received)

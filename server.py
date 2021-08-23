@@ -2,6 +2,7 @@ import socket
 import server_functions
 import time
 import json
+import crc_functions
 
 s = socket.socket() # create server socket s with default param ipv4, TCP
 print('Socket Created')
@@ -43,9 +44,30 @@ while True:
         request = c.recv(1024).decode()
         if request == 'Request to send':
             c.send(bytes('Clear to send', 'utf-8')) # notify client that its clear to send
-            start_timestamp = time.time()
-            msg_received = c.recv(1000000).decode()
-            print("Message received = ", msg_received)
+
+            while True: # receive message until CRC is pass
+                start_timestamp = time.time()
+                #msg_received = c.recv(1000000).decode()
+                msg_received = '0' + bin(int.from_bytes(c.recv(1000000), byteorder ='big'))[2:].zfill(8)
+                print("Message received = ", msg_received)
+
+                # CRC check
+                rem = crc_functions.decodeData(msg_received, crc_key)  # Remainder
+                if int(rem) == 0:
+                    print("CRC check pass")
+                    break
+                else:
+                    print("CRC check fail")
+                    c.send(bytes('Resend message', 'utf-8')) # Ask client to resend message if CRC fails
+
+            r_bin_data = msg_received[:-(len(crc_key) - 1)]
+            print('Received binary data = ', r_bin_data)
+
+            # Convert binary to string
+            msg_received_jsn = ''.join(chr(int(r_bin_data[i:i + 8], 2)) for i in range(0, len(r_bin_data), 8))
+
+            msg_received = json.loads(msg_received_jsn)
+            print('Message received = ', msg_received)
 
             auth_result = server_functions.authenticator(secret, crc_key, received_shares, msg_received, time_margin, start_timestamp)
             print("Authentication ", auth_result)

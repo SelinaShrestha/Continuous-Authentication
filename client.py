@@ -5,7 +5,7 @@ import client_functions
 import json
 import numpy as np
 import sys
-
+import math
 
 c = socket.socket() # create server socket c with default param ipv4, TCP
 
@@ -70,18 +70,30 @@ while (time.time() - start_time <= total_period):
         msg_to_send = client_functions.message_generator(secret, server_id, client_id, msg, u, time_flag, sa)
         msg_with_crc = client_functions.crc_generator(msg_to_send, crc_key) # Add CRC
 
-        print("Size of message sent = ", sys.getsizeof(bytes(msg_with_crc, 'utf-8')))
-        print("Message sent in bytes = ", msg_with_crc.encode('utf-8'))
+        #print("Size of message sent = ", sys.getsizeof(bytes(msg_with_crc, 'utf-8')))
+        #print("Message sent in bytes = ", msg_with_crc.encode('utf-8'))
+
+        msg_with_crc_bytes = int(msg_with_crc,2).to_bytes(math.ceil(len(msg_with_crc)/8), byteorder='big') # Convert from binary to bytes
+        print("Message sent in bytes = ", msg_with_crc_bytes)
+        print("Size of message in bytes = ", sys.getsizeof(msg_with_crc_bytes))
 
         c.send(bytes('Request to send','utf-8')) # Request to send message to server
 
         if(c.recv(1024).decode() == 'Clear to send'):
 
-            c.send(msg_with_crc.encode('utf-8')) # Send message to server
+            #c.send(msg_with_crc.encode('utf-8')) # Send message to server
+            c.send(msg_with_crc_bytes)  # Send message to server
 
             time_flag = time_flag + 1
 
-            result = c.recv(1024).decode() # Current auth result, backoff period
+            while True:
+                # Resend message to server if CRC fails
+                result = c.recv(1024).decode()
+                if result == 'Resend message':
+                    c.send(msg_with_crc_bytes)  # Resend message to server
+                else:
+                    break
+            #result = c.recv(1024).decode() # Current auth result, backoff period
             print("Result = ", result)
             print('*********************************************************************')
             print(' ')
