@@ -6,6 +6,7 @@ import json
 import numpy as np
 import sys
 import math
+import hashlib
 
 c = socket.socket() # create server socket c with default param ipv4, TCP
 
@@ -36,32 +37,38 @@ time_flag = 1 # Initialization of time flag
 
 period = 2 # Period for each authentication in seconds
 total_period = 20 # Total period for the session
-no_of_auth = 0
+#no_of_auth = 0
 sent_shares = [] # Store shares sent during the session to prevent duplicate shares
 
 # Generate k degree polynomial for the secret
-a = np.array([secret])
-a = np.append(a, client_functions.polynomial_generator(k))
+#a = np.array([secret])
+#a = np.append(a, client_functions.polynomial_generator(k))
 auth_result = "pass" # initialization
 while (time.time() - start_time <= total_period):
     #if (time_flag <= no_of_auth):
     #if (time.time() - start_time <= total_period):
     if (time_flag == 1) or (time.time() - timestamp >= period):
         # If no of auth exceeds current polynomial degree, increase polynomial degree by k
-        no_of_auth = no_of_auth + 1
-        if no_of_auth > len(a) - 1:
-            a = np.append(a, client_functions.polynomial_generator(k))
+        #no_of_auth = no_of_auth + 1
+        #if no_of_auth > len(a) - 1:
+            #a = np.append(a, client_functions.polynomial_generator(k))
 
-        print("Polynomial coefficients a = ", a)
-        print("Share u = f(x) = (a0 + time flag) + a1*x + a2*x^2 + ... + ak-1*x^k-1 where x = 1,2,...")
+        #print("Polynomial coefficients a = ", a)
+        #print("Share u = f(x) = (a0 + time flag) + a1*x + a2*x^2 + ... + ak-1*x^k-1 where x = 1,2,...")
 
         # Generate share and share authenticator
         while True: # Select random x until unique share is generated
-            x = random.randint(1, 20) # Generate random x
-            u, sa = client_functions.share_generator(secret, a, x, time_flag)
+            x = random.randint(1, 9999) # Generate random x
+            u = secret + time_flag + x # Share = secret + time flag + random number x
+            #u, sa = client_functions.share_generator(secret, a, x, time_flag)
             if sent_shares.count(u) == 0: # Check that new share has not been sent previously
                 sent_shares.append(u)
                 break
+
+        sa = hashlib.sha256(bytes(str(x),'utf-8')).digest() # Share authenticator = hash(share - secret - timeflag) = hash(x)
+
+        print("share u = ", u)
+        print("Share Authenticator sa = ", sa)
 
         msg = "Continuous Authentication " + str(time_flag)
         timestamp = time.time()

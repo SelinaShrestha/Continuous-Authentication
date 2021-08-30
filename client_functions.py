@@ -25,13 +25,13 @@ def share_generator(secret, a, x, time_flag):
     u = time_flag # Initializing to 0 and adding time flag
     for i in range(len(a)): # i = degree of x in each polynomial coefficient (0 to k)
         u += a[i]*(x**i) # u += ai*(x^i)
-    print("share (x,u) = (", x, ",",u,")")
+    #print("share (x,u) = (", x, ",",u,")")
 
     # Computing share authenticator (sa)
     # sa equals hash(sum(ai*(x^i)) for i = 1,2,..,k)
     print("u - secret - time_flag = ", str(u-secret-time_flag))
     sa = hashlib.sha256(bytes(str(u - secret - time_flag),'utf-8')).digest()
-    print("Share Authenticator sa = ", sa)
+    #print("Share Authenticator sa = ", sa)
 
     return(u, sa) # return share, share authenticator
 
