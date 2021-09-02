@@ -11,6 +11,7 @@ import hashlib
 c = socket.socket() # create server socket c with default param ipv4, TCP
 
 server_ip = 'localhost' # server ip addr local
+#server_ip = '192.168.137.197'
 #server_ip = '10.161.6.234' # server ip addr rbpi w sticker
 #server_ip = '10.161.6.230' # server ip addr rbpi wo sticker
 
