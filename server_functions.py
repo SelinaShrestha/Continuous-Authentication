@@ -9,9 +9,6 @@ import ntplib
 
 
 def authenticator(secret, crc_key, received_shares, msg_received, time_margin, start_timestamp):
-
-
-
     #msg_received = json.loads(msg_received)
     # r = received
     r_client_id = msg_received["client_id"]
@@ -22,21 +19,13 @@ def authenticator(secret, crc_key, received_shares, msg_received, time_margin, s
     r_sa = msg_received["sa"]
     r_mac = msg_received["mac"]
 
-    print("Client ID = ", r_client_id)
-    print("Server ID = ", r_server_id)
-    print("Message = ", r_message)
-    print("Share (u) = ", r_u)
-    print("Time flag = ", r_time_flag)
-    print("Share Authenticator (sa) = ", r_sa)
-    print("MAC = ", r_mac)
-
     # calc = newly calculated
 
     # Check message freshness with timestamp
     timestamp = time.time()
-    print("Timestamp difference = ", start_timestamp - timestamp)
-    print("time margin = ", time_margin)
-    if abs(start_timestamp - timestamp) <= time_margin:
+    #print("Timestamp difference = ", timestamp - start_timestamp)
+    #print("time margin = ", time_margin)
+    if abs(timestamp - start_timestamp) <= time_margin:
         print("Message is fresh")
     else:
         print("Stale message")
@@ -71,7 +60,7 @@ def authenticator(secret, crc_key, received_shares, msg_received, time_margin, s
         return "fail"
 
     # Compute new share authenticator
-    print("u - secret - time flag= ", str(r_u - secret - r_time_flag))
+    #print("u - secret - time flag= ", str(r_u - secret - r_time_flag))
     calc_sa = hashlib.sha256(bytes(str(r_u - secret - r_time_flag),'utf-8')).digest()
     print("Calculated share authenticator = ", calc_sa)
     if str(calc_sa) == r_sa:
@@ -80,3 +69,33 @@ def authenticator(secret, crc_key, received_shares, msg_received, time_margin, s
     else:
         print("Share not authenticated")
         return "fail"
+
+def authentication_result(auth_result):
+    # Sends authentication result to client and implements exponential backoff in case of failure
+    # Set backoff period according to auth result and consecutive num of failures
+    if auth_result == "pass":
+        num_of_fails = 0  # reset no of failures to 0
+        backoff_period = 0  # reset backoff time to 0
+        result_dict = {
+            "auth_result": auth_result,
+            "backoff_period": backoff_period
+        }
+        result = json.dumps(result_dict)
+        print("Result Sent = ", result)
+        c.send(bytes(result, 'utf-8'))
+    else:
+        num_of_fails = num_of_fails + 1
+        backoff_period = period ** num_of_fails  # exponential backoff = auth period ^ num of failures
+        result_dict = {
+            "auth_result": auth_result,
+            "backoff_period": backoff_period
+        }
+        result = json.dumps(result_dict)
+        print("Result Sent = ", result)
+        c.send(bytes(result, 'utf-8'))
+        backoff_start = time.time()
+        # Do not receive data for backoff period
+        while time.time() - backoff_start <= backoff_period:
+            pass
+    print('*********************************************************************')
+    print(' ')
