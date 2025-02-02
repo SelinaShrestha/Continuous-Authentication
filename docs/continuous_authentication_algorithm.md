@@ -48,6 +48,8 @@ Ensures the share **has not been used before** in the session.
 
 ## 3. Algorithm
 
+![Continuous Authentication Algorithm Diagram](algorithm_diagram.png)
+
 ### **Initialization**
 - **Secret, authentication period, and total session period** are initialized and communicated between **client and server**.
 
