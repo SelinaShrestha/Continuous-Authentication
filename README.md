@@ -76,5 +76,5 @@ For performance evaluation, refer to:
 For any inquiries, feel free to reach out:
 - **GitHub:** [SelinaShrestha](https://github.com/SelinaShrestha)
 - **LinkedIn:** [selinashrestha](https://www.linkedin.com/in/selinashrestha/)
-- **Email:** shresth4@uci.edu | selina.shrestha@gmail.com
+- **Email:** shresth4@uci.edu | selina.shrestha0@gmail.com
 
